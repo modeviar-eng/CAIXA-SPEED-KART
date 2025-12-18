@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KartTiming - Sistema de Caixa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121212; --bg-panel: #1e1e1e; --primary: #00e676;
+            --secondary: #2979ff; --danger: #ff1744; --warning: #ffea00;
+            --text-main: #ffffff; --text-muted: #b0b0b0;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Exo 2', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 80px; background-color: #000; display: flex; flex-direction: column; align-items: center; padding-top: 20px; border-right: 1px solid #333; transition: width 0.3s; z-index: 10; flex-shrink: 0; }
+        .sidebar:hover { width: 220px; }
+        .nav-btn { background: none; border: none; color: var(--text-muted); width: 100%; padding: 15px; text-align: left; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; gap: 15px; transition: 0.2s; overflow: hidden; white-space: nowrap; }
+        .nav-btn:hover, .nav-btn.active { color: var(--primary); background-color: rgba(0, 230, 118, 0.1); border-left: 3px solid var(--primary); }
+        .nav-btn span { font-size: 0.9rem; font-weight: bold; }
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
+        .tab-content { display: none; padding-bottom: 80px; } 
+        .tab-content.active { display: block; }
+        .glass-panel { background: var(--bg-panel); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; position: relative; }
+        input, select { background: #2a2a2a; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; flex: 1; font-size: 1rem; }
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; font-size: 0.9rem; }
+        .btn-primary { background: var(--primary); color: #000; } 
+        .btn-blue { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; background: #333; padding: 12px 10px; color: var(--primary); }
+        td { padding: 10px; border-bottom: 1px solid #333; }
+        .driver-tag { display: inline-block; background: #333; padding: 5px 10px; border-radius: 4px; margin: 2px; border: 1px solid var(--primary); font-size: 0.8rem; }
+        .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #2a2a2a; border: 1px solid var(--primary); z-index: 100; max-height: 200px; overflow-y: auto; border-radius: 0 0 6px 6px; display: none; }
+        .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #444; }
+        .search-item:hover { background: #333; color: var(--primary); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-content { background: var(--bg-panel); margin: 10% auto; padding: 25px; width: 400px; border-radius: 10px; border: 1px solid var(--primary); max-width: 90%; }
+        .stat-card { background: #252525; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); flex: 1; min-width: 140px; }
+        
+        .stock-ok { color: var(--primary); font-weight: bold; }
+        .stock-low { color: var(--danger); font-weight: bold; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        @media (max-width: 768px) { body { flex-direction: column; } .sidebar { width: 100%; height: auto; flex-direction: row; padding: 5px; border-right: none; border-bottom: 1px solid #333; } }
+    </style>
+</head>
+<body>
+
+<nav class="sidebar">
+    <button class="nav-btn active" onclick="switchTab('clientes')"><span>👥 Clientes</span></button>
+    <button class="nav-btn" onclick="switchTab('corridas')"><span>🏎️ Corridas</span></button>
+    <button class="nav-btn" onclick="switchTab('estoque')"><span>📦 Estoque (Cad)</span></button>
+    <button class="nav-btn" onclick="switchTab('entrada-produtos')"><span>🚛 Entrada Merc.</span></button>
+    <button class="nav-btn" onclick="switchTab('venda-avulsa')"><span>🛒 Vendas</span></button>
+    <button class="nav-btn" onclick="switchTab('relatorios')"><span>📊 Relatórios</span></button>
+</nav>
+
+<div class="main-content">
+    
+    <div id="tab-clientes" class="tab-content active">
+        <h2>Cadastro de Clientes</h2>
+        <div class="glass-panel">
+            <div class="form-row">
+                <input type="text" id="cliNome" placeholder="Nome Completo">
+                <input type="text" id="cliTelefone" placeholder="Telefone">
+                <input type="email" id="cliEmail" placeholder="E-mail">
+                <button class="btn btn-primary" onclick="salvarCliente()">Salvar Cliente</button>
+            </div>
+        </div>
+        <div class="glass-panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Clientes Cadastrados</h3>
+                <input type="text" id="searchTable" placeholder="🔍 Pesquisar por nome..." style="max-width:300px;" onkeyup="carregarClientes()">
+            </div>
+            <div style="overflow-x:auto">
+                <table id="tabelaClientes">
+                    <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-corridas" class="tab-content">
+        <h2>Agendar Nova Bateria</h2>
+        <div class="glass-panel">
+            <div class="form-row">
+                <input type="text" id="raceName" placeholder="Nome da Bateria">
+                <div style="flex:1; position:relative;">
+                    <input type="text" id="responsible" placeholder="Responsável" onkeyup="searchClient(this, 'res_results')">
+                    <div id="res_results" class="search-results"></div>
+                </div>
+                <input type="date" id="raceDate">
+                <input type="time" id="raceTime">
+            </div>
+            <div class="form-row">
+                <select id="raceMode">
+                    <option value="corrida">Modo: Corrida</option>
+                    <option value="tomada">Modo: Tomada de Tempo</option>
+                </select>
+                <select id="circuitSelect"><option value="">Carregando pistas...</option></select>
+            </div>
+        </div>
+        <div class="glass-panel">
+            <h3>Adicionar Pilotos</h3>
+            <div class="form-row">
+                <div style="flex:2; position:relative;">
+                    <input type="text" id="driverName" placeholder="Nome do Piloto" onkeyup="searchClient(this, 'driver_results')">
+                    <div id="driver_results" class="search-results"></div>
+                </div>
+                <input type="number" id="driverPrice" placeholder="Valor (R$)" step="0.01" style="flex:1;">
+                <select id="driverPayment" style="flex:1;">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="PIX">PIX</option>
+                    <option value="Débito">Débito</option>
+                    <option value="Crédito">Crédito</option>
+                    <option value="Cortesia">Cortesia</option>
+                </select>
+                <button class="btn btn-blue" onclick="addDriverToList()">+ Adicionar</button>
+            </div>
+            <table id="tempDriversTable">
+                <thead><tr><th>Piloto</th><th>Pista</th><th>Pagamento</th><th>Valor</th><th>Ação</th></tr></thead>
+                <tbody></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align:right; font-weight:bold;">TOTAL BATERIA:</td>
+                        <td id="totalRaceValue" style="color:var(--primary); font-weight:bold;">R$ 0.00</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-primary" onclick="saveBooking()" style="width: 100%;">ENVIAR PARA CRONOMETRAGEM</button>
+            </div>
+        </div>
+        <h3>Baterias Agendadas</h3>
+        <div id="bookingList"></div>
+    </div>
+
+    <div id="tab-estoque" class="tab-content">
+        <h2>Gestão de Estoque</h2>
+        <div class="glass-panel">
+            <h3>Cadastrar Novo Produto</h3>
+            <div class="form-row">
+                <input type="text" id="novoProdNome" placeholder="Nome do Produto" style="flex: 2;">
+                <input type="number" id="novoProdPreco" placeholder="Preço de Venda" step="0.01">
+                <input type="number" id="novoProdMin" placeholder="Mínimo" style="flex: 1;">
+                <button class="btn btn-primary" onclick="cadastrarProduto()">Criar Produto</button>
+            </div>
+        </div>
+        <div class="glass-panel">
+            <h3>Estoque Atual</h3>
+            <table id="tabelaEstoqueGeral">
+                <thead><tr><th>Produto</th><th>Preço</th><th>Qtd</th><th>Mín.</th><th>Status</th><th>Ação</th></tr></thead>
+                <tbody id="listaEstoqueGeralBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-entrada-produtos" class="tab-content">
+        <h2>Entrada de Mercadoria</h2>
+        <div class="glass-panel">
+            <div class="form-row">
+                <select id="selectEntradaProduto"><option value="">Carregando...</option></select>
+                <input type="number" id="entradaQtd" placeholder="Qtd">
+                <input type="number" id="entradaCusto" placeholder="Custo Un." step="0.01">
+                <select id="entradaPagamento">
+                    <option value="Dinheiro">Dinheiro (Caixa)</option>
+                    <option value="PIX">PIX</option>
+                </select>
+                <button class="btn btn-primary" onclick="registrarEntrada()">Registrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-venda-avulsa" class="tab-content">
+        <h2>Nova Venda Rápida</h2>
+        <div class="glass-panel">
+            <div class="form-row">
+                <select id="selectProdutoVenda"></select>
+                <input type="number" id="qtdProdutoVenda" value="1" min="1">
+                <select id="salePayment">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="PIX">PIX</option>
+                    <option value="Débito">Débito</option>
+                    <option value="Crédito">Crédito</option>
+                </select>
+                <button class="btn btn-primary" onclick="realizarVendaAvulsa()">Finalizar Venda</button>
+            </div>
+        </div>
+        <div class="glass-panel">
+            <h3>Últimas Vendas (Hoje)</h3>
+            <table id="tabelaVendasAvulsas">
+                <thead><tr><th>Data</th><th>Item</th><th>Qtd</th><th>Pagamento</th><th>Total</th><th>Ação</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="tab-relatorios" class="tab-content">
+        <h2>Relatório de Faturamento</h2>
+        <div class="glass-panel">
+            <div class="form-row">
+                <input type="date" id="reportStart">
+                <input type="date" id="reportEnd">
+                <button class="btn btn-blue" onclick="gerarRelatorio()">Filtrar</button>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:15px; margin-bottom:20px;">
+            <div class="stat-card"><div style="font-size:0.8rem;">TOTAL</div><div id="statTotal" style="font-size:1.5rem; font-weight:bold; color:var(--primary)">R$ 0,00</div></div>
+            <div class="stat-card"><div style="font-size:0.8rem;">DINHEIRO</div><div id="statDinheiro">R$ 0,00</div></div>
+            <div class="stat-card"><div style="font-size:0.8rem;">PIX</div><div id="statPIX">R$ 0,00</div></div>
+            <div class="stat-card"><div style="font-size:0.8rem;">DÉBITO</div><div id="statDebito">R$ 0,00</div></div>
+            <div class="stat-card"><div style="font-size:0.8rem;">CRÉDITO</div><div id="statCredito">R$ 0,00</div></div>
+        </div>
+        <div class="glass-panel">
+            <table id="tabelaRelatorioCompleto">
+                <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Pagamento</th><th>Valor</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div id="modalEditCliente" class="modal">
+    <div class="modal-content">
+        <h3>Editar Cliente</h3>
+        <input type="hidden" id="editCliId">
+        <input type="text" id="editCliNome" placeholder="Nome" style="width:100%; margin-bottom:10px;">
+        <input type="text" id="editCliTel" placeholder="Telefone" style="width:100%; margin-bottom:10px;">
+        <input type="email" id="editCliEmail" placeholder="E-mail" style="width:100%; margin-bottom:10px;">
+        <button class="btn btn-primary" onclick="atualizarCliente()" style="width:100%; margin-bottom:10px;">Salvar</button>
+        <button class="btn btn-danger" onclick="document.getElementById('modalEditCliente').style.display='none'" style="width:100%;">Cancelar</button>
+    </div>
+</div>
+
+<div id="modalEditProduto" class="modal">
+    <div class="modal-content">
+        <h3>Editar Produto</h3>
+        <input type="hidden" id="editProdId">
+        <input type="text" id="editProdNome" style="width:100%; margin-bottom:10px;">
+        <input type="number" id="editProdPreco" step="0.01" style="width:100%; margin-bottom:10px;">
+        <input type="number" id="editProdEstoque" style="width:100%; margin-bottom:10px;">
+        <input type="number" id="editProdMin" style="width:100%; margin-bottom:10px;">
+        <button class="btn btn-primary" onclick="atualizarProduto()" style="width:100%; margin-bottom:10px;">Salvar</button>
+        <button class="btn btn-danger" onclick="document.getElementById('modalEditProduto').style.display='none'" style="width:100%;">Cancelar</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, Timestamp, onSnapshot, deleteDoc, doc, orderBy, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCXFxcygBteUYgUjuobsTSYVQRIJEgUFjA",
+        authDomain: "cronometragem-kart.firebaseapp.com",
+        projectId: "cronometragem-kart",
+        storageBucket: "cronometragem-kart.firebasestorage.app",
+        messagingSenderId: "494692374520",
+        appId: "1:494692374520:web:d84624be4cc0b3d068280d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let tempDrivers = [];
+    let allClients = [];
+
+    // --- FUNÇÕES GLOBAIS DE EXCLUSÃO ---
+    window.deletarBateria = async (id) => { if(confirm("Excluir agendamento?")) await deleteDoc(doc(db, "agendamentos", id)); };
+    window.deletarVenda = async (id) => { if(confirm("Excluir venda?")) await deleteDoc(doc(db, "vendas_avulsas", id)); };
+    window.deletarProduto = async (id) => { if(confirm("Excluir produto?")) await deleteDoc(doc(db, "produtos", id)); };
+    window.deletarCliente = async (id) => { if(confirm("Excluir cliente?")) await deleteDoc(doc(db, "clientes", id)); };
+
+    window.switchTab = (tab) => {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        if(window.event) window.event.currentTarget.classList.add('active');
+        if(tab === 'relatorios') gerarRelatorio();
+        if(tab === 'venda-avulsa' || tab === 'estoque' || tab === 'entrada-produtos') carregarProdutos();
+    };
+
+    // --- CLIENTES ---
+    window.salvarCliente = async () => {
+        const nome = document.getElementById('cliNome').value;
+        if(!nome) return alert("Nome obrigatório!");
+        await addDoc(collection(db, "clientes"), { nome, tel: document.getElementById('cliTelefone').value, email: document.getElementById('cliEmail').value, dataCadastro: Timestamp.now() });
+        document.getElementById('cliNome').value = ""; document.getElementById('cliTelefone').value = ""; document.getElementById('cliEmail').value = "";
+    };
+
+    window.carregarClientes = () => {
+        onSnapshot(query(collection(db, "clientes"), orderBy("nome")), (snap) => {
+            const tb = document.querySelector('#tabelaClientes tbody'); tb.innerHTML = ""; allClients = [];
+            snap.forEach(d => {
+                const c = d.data(); allClients.push({id: d.id, ...c});
+                const cliJson = JSON.stringify({id: d.id, ...c}).replace(/'/g, "&apos;");
+                tb.innerHTML += `<tr><td>${c.nome}</td><td>${c.tel || '-'}</td><td>${c.email || '-'}</td><td>
+                    <button class="btn-blue" style="padding:5px 10px" onclick='abrirEdicaoCliente(${cliJson})'>Editar</button> 
+                    <button class="btn-danger" style="padding:5px 10px" onclick="deletarCliente('${d.id}')">Excluir</button>
+                </td></tr>`;
+            });
+        });
+    }
+
+    window.abrirEdicaoCliente = (cli) => {
+        document.getElementById('editCliId').value = cli.id;
+        document.getElementById('editCliNome').value = cli.nome;
+        document.getElementById('editCliTel').value = cli.tel || "";
+        document.getElementById('editCliEmail').value = cli.email || "";
+        document.getElementById('modalEditCliente').style.display = 'block';
+    };
+
+    window.atualizarCliente = async () => {
+        const id = document.getElementById('editCliId').value;
+        const nome = document.getElementById('editCliNome').value;
+        const tel = document.getElementById('editCliTel').value;
+        const email = document.getElementById('editCliEmail').value;
+        await updateDoc(doc(db, "clientes", id), { nome, tel, email });
+        document.getElementById('modalEditCliente').style.display = 'none';
+    };
+
+    window.searchClient = (input, resultsId) => {
+        const val = input.value.toLowerCase();
+        const resDiv = document.getElementById(resultsId);
+        if(val.length < 1) { resDiv.style.display = 'none'; return; }
+        const filtered = allClients.filter(c => c.nome.toLowerCase().includes(val));
+        resDiv.innerHTML = filtered.map(c => `<div class="search-item" onclick="document.getElementById('${input.id}').value='${c.nome}'; document.getElementById('${resultsId}').style.display='none'">${c.nome}</div>`).join('');
+        resDiv.style.display = filtered.length > 0 ? 'block' : 'none';
+    };
+
+    // --- CORRIDAS ---
+    window.addDriverToList = () => {
+        const name = document.getElementById('driverName').value;
+        const circuitSelect = document.getElementById('circuitSelect');
+        const price = parseFloat(document.getElementById('driverPrice').value) || 0;
+        const payment = document.getElementById('driverPayment').value;
+        if(!name || !circuitSelect.value) return alert("Preencha Nome e Pista");
+        tempDrivers.push({ name: name, pistaNome: JSON.parse(circuitSelect.value).name, id: Date.now(), laps: [], price, paymentMethod: payment });
+        renderTempTable(); document.getElementById('driverName').value = "";
+    };
+
+    function renderTempTable() {
+        const tbody = document.querySelector('#tempDriversTable tbody');
+        let total = 0;
+        tbody.innerHTML = tempDrivers.map((d, i) => { total += d.price; return `<tr><td>${d.name}</td><td><small>${d.pistaNome}</small></td><td>${d.paymentMethod}</td><td>R$ ${d.price.toFixed(2)}</td><td><button class="btn-danger" onclick="tempDrivers.splice(${i},1);renderTempTable()">X</button></td></tr>`; }).join('');
+        document.getElementById('totalRaceValue').innerText = `R$ ${total.toFixed(2)}`;
+    }
+
+    window.saveBooking = async () => {
+        const circuit = document.getElementById('circuitSelect').value;
+        const totalValue = tempDrivers.reduce((sum, d) => sum + d.price, 0);
+        if(!document.getElementById('raceName').value || tempDrivers.length === 0 || !circuit) return alert("Preencha dados!");
+        await addDoc(collection(db, "agendamentos"), { raceName: document.getElementById('raceName').value, responsible: document.getElementById('responsible').value, raceDate: document.getElementById('raceDate').value, raceTime: document.getElementById('raceTime').value, mode: document.getElementById('raceMode').value, circuit: JSON.parse(circuit), drivers: tempDrivers, status: "pendente", totalValue, createdAt: Timestamp.now() });
+        alert("Agendado!"); tempDrivers = []; renderTempTable();
+    };
+
+    function loadBookings() {
+        onSnapshot(query(collection(db, "agendamentos"), orderBy("createdAt", "desc")), (snap) => {
+            const list = document.getElementById('bookingList'); list.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data(); if (data.status === "encerrado") return;
+                list.innerHTML += `<div class="glass-panel"><div style="display:flex; justify-content:space-between;"><strong>${data.raceTime} - ${data.raceName}</strong><strong>R$ ${data.totalValue?.toFixed(2)}</strong></div><div>${data.drivers.map(p => `<span class="driver-tag">${p.name}</span>`).join('')}</div><div style="text-align:right"><button class="btn btn-danger" onclick="deletarBateria('${d.id}')">Excluir</button></div></div>`;
+            });
+        });
+    }
+
+    // --- ESTOQUE E VENDAS ---
+    window.cadastrarProduto = async () => {
+        const nome = document.getElementById('novoProdNome').value;
+        const preco = parseFloat(document.getElementById('novoProdPreco').value);
+        if(!nome || isNaN(preco)) return alert("Preencha Nome e Preço!");
+        await addDoc(collection(db, "produtos"), { nome, preco, estoque: 0, estoqueMin: parseInt(document.getElementById('novoProdMin').value) || 0 });
+        document.getElementById('novoProdNome').value = ""; document.getElementById('novoProdPreco').value = "";
+    };
+
+    window.carregarProdutos = () => {
+        onSnapshot(collection(db, "produtos"), (snap) => {
+            const listEstoque = document.getElementById('listaEstoqueGeralBody');
+            const selectVenda = document.getElementById('selectProdutoVenda');
+            const selectEntrada = document.getElementById('selectEntradaProduto');
+            listEstoque.innerHTML = ""; selectVenda.innerHTML = ""; selectEntrada.innerHTML = "";
+            snap.forEach(d => {
+                const p = d.data(); const prodJson = JSON.stringify({id: d.id, ...p}).replace(/'/g, "&apos;");
+                listEstoque.innerHTML += `<tr><td>${p.nome}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td><td>${p.estoqueMin}</td><td>${p.estoque <= p.estoqueMin ? '⚠️' : '✅'}</td><td><button class="btn-blue" onclick='abrirEdicaoProduto(${prodJson})'>Editar</button> <button class="btn-danger" onclick="deletarProduto('${d.id}')">Excluir</button></td></tr>`;
+                selectVenda.innerHTML += `<option value='${prodJson}'>${p.nome} (${p.estoque})</option>`;
+                selectEntrada.innerHTML += `<option value='${prodJson}'>${p.nome}</option>`;
+            });
+        });
+
+        const hoje = new Date().toISOString().split('T')[0];
+        onSnapshot(query(collection(db, "vendas_avulsas"), where("dataVenda", "==", hoje), orderBy("createdAt", "desc")), (snap) => {
+            const tb = document.querySelector('#tabelaVendasAvulsas tbody'); tb.innerHTML = "";
+            snap.forEach(d => {
+                const v = d.data();
+                tb.innerHTML += `<tr><td>${v.dataVenda}</td><td>${v.item}</td><td>${v.quantidade}</td><td>${v.paymentMethod}</td><td>R$ ${v.totalVenda.toFixed(2)}</td><td><button class="btn-danger" onclick="deletarVenda('${d.id}')">X</button></td></tr>`;
+            });
+        });
+    };
+
+    window.abrirEdicaoProduto = (prod) => {
+        document.getElementById('editProdId').value = prod.id;
+        document.getElementById('editProdNome').value = prod.nome;
+        document.getElementById('editProdPreco').value = prod.preco;
+        document.getElementById('editProdEstoque').value = prod.estoque;
+        document.getElementById('editProdMin').value = prod.estoqueMin;
+        document.getElementById('modalEditProduto').style.display = 'block';
+    };
+
+    window.atualizarProduto = async () => {
+        const id = document.getElementById('editProdId').value;
+        await updateDoc(doc(db, "produtos", id), { 
+            nome: document.getElementById('editProdNome').value, 
+            preco: parseFloat(document.getElementById('editProdPreco').value),
+            estoque: parseInt(document.getElementById('editProdEstoque').value),
+            estoqueMin: parseInt(document.getElementById('editProdMin').value)
+        });
+        document.getElementById('modalEditProduto').style.display = 'none';
+    };
+
+    window.realizarVendaAvulsa = async () => {
+        const prod = JSON.parse(document.getElementById('selectProdutoVenda').value);
+        const qtd = parseInt(document.getElementById('qtdProdutoVenda').value);
+        await addDoc(collection(db, "vendas_avulsas"), { item: prod.nome, precoUnit: prod.preco, quantidade: qtd, totalVenda: prod.preco * qtd, paymentMethod: document.getElementById('salePayment').value, dataVenda: new Date().toISOString().split('T')[0], createdAt: Timestamp.now() });
+        await updateDoc(doc(db, "produtos", prod.id), { estoque: increment(-qtd) });
+    };
+
+    window.registrarEntrada = async () => {
+        const prod = JSON.parse(document.getElementById('selectEntradaProduto').value);
+        const qtd = parseInt(document.getElementById('entradaQtd').value);
+        await updateDoc(doc(db, "produtos", prod.id), { estoque: increment(qtd) });
+    };
+
+    window.gerarRelatorio = async () => {
+        const start = document.getElementById('reportStart').value;
+        const end = document.getElementById('reportEnd').value;
+        const tb = document.querySelector('#tabelaRelatorioCompleto tbody'); tb.innerHTML = "";
+        let totais = { Dinheiro: 0, PIX: 0, Débito: 0, Crédito: 0, Total: 0 };
+        const snapVendas = await getDocs(collection(db, "vendas_avulsas"));
+        snapVendas.forEach(d => {
+            const v = d.data(); if((start && v.dataVenda < start) || (end && v.dataVenda > end)) return;
+            totais[v.paymentMethod] = (totais[v.paymentMethod] || 0) + v.totalVenda;
+            totais.Total += v.totalVenda;
+            tb.innerHTML += `<tr><td>${v.dataVenda}</td><td>Venda</td><td>${v.item}</td><td>${v.paymentMethod}</td><td>R$ ${v.totalVenda.toFixed(2)}</td></tr>`;
+        });
+        document.getElementById('statTotal').innerText = `R$ ${totais.Total.toFixed(2)}`;
+        document.getElementById('statDinheiro').innerText = `R$ ${totais.Dinheiro.toFixed(2)}`;
+        document.getElementById('statPIX').innerText = `R$ ${totais.PIX.toFixed(2)}`;
+        document.getElementById('statDebito').innerText = `R$ ${totais.Débito.toFixed(2)}`;
+        document.getElementById('statCredito').innerText = `R$ ${totais.Crédito.toFixed(2)}`;
+    };
+
+    async function loadCircuits() {
+        const snap = await getDocs(collection(db, "circuits"));
+        const sel = document.getElementById('circuitSelect'); sel.innerHTML = "";
+        snap.forEach(d => { sel.innerHTML += `<option value='${JSON.stringify({id: d.id, ...d.data()})}'>${d.data().name}</option>`; });
+    }
+
+    window.onload = () => { 
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('raceDate').value = hoje;
+        document.getElementById('reportStart').value = hoje;
+        document.getElementById('reportEnd').value = hoje;
+        carregarClientes(); loadCircuits(); loadBookings(); carregarProdutos();
+    };
+</script>
+</body>
+</html>
