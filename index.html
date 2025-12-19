@@ -14,34 +14,88 @@
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Exo 2', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Desktop */
         .sidebar { width: 80px; background-color: #000; display: flex; flex-direction: column; align-items: center; padding-top: 20px; border-right: 1px solid #333; transition: width 0.3s; z-index: 10; flex-shrink: 0; }
         .sidebar:hover { width: 220px; }
         .nav-btn { background: none; border: none; color: var(--text-muted); width: 100%; padding: 15px; text-align: left; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; gap: 15px; transition: 0.2s; overflow: hidden; white-space: nowrap; }
         .nav-btn:hover, .nav-btn.active { color: var(--primary); background-color: rgba(0, 230, 118, 0.1); border-left: 3px solid var(--primary); }
         .nav-btn span { font-size: 0.9rem; font-weight: bold; }
+        
         .main-content { flex: 1; padding: 20px; overflow-y: auto; position: relative; }
         .tab-content { display: none; padding-bottom: 80px; } 
         .tab-content.active { display: block; }
+        
         .glass-panel { background: var(--bg-panel); padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        
         .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; position: relative; }
         input, select { background: #2a2a2a; border: 1px solid #444; color: white; padding: 12px; border-radius: 6px; flex: 1; font-size: 1rem; }
+        
         .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; font-size: 0.9rem; }
         .btn-primary { background: var(--primary); color: #000; } 
         .btn-blue { background: var(--secondary); color: white; }
         .btn-danger { background: var(--danger); color: white; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: left; background: #333; padding: 12px 10px; color: var(--primary); }
+        
+        /* Tabelas e Responsividade */
+        .table-responsive { width: 100%; overflow-x: auto; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 600px; /* Garante largura mínima para scroll */ }
+        th { text-align: left; background: #333; padding: 12px 10px; color: var(--primary); white-space: nowrap; }
         td { padding: 10px; border-bottom: 1px solid #333; }
+        
         .driver-tag { display: inline-block; background: #333; padding: 5px 10px; border-radius: 4px; margin: 2px; border: 1px solid var(--primary); font-size: 0.8rem; }
+        
         .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #2a2a2a; border: 1px solid var(--primary); z-index: 100; max-height: 200px; overflow-y: auto; border-radius: 0 0 6px 6px; display: none; }
         .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #444; }
         .search-item:hover { background: #333; color: var(--primary); }
+        
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
         .modal-content { background: var(--bg-panel); margin: 10% auto; padding: 25px; width: 400px; border-radius: 10px; border: 1px solid var(--primary); max-width: 90%; }
+        
         .stat-card { background: #252525; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); flex: 1; min-width: 140px; }
         .chart-container { position: relative; height: 300px; width: 100%; }
 
-        @media (max-width: 768px) { body { flex-direction: column; } .sidebar { width: 100%; height: auto; flex-direction: row; padding: 5px; border-right: none; border-bottom: 1px solid #333; overflow-x: auto; } }
+        /* AJUSTES MOBILE / CELULAR */
+        @media (max-width: 768px) { 
+            body { flex-direction: column; height: 100vh; } 
+            
+            /* Sidebar com scroll horizontal */
+            .sidebar { 
+                width: 100%; 
+                height: auto; 
+                flex-direction: row; 
+                padding: 5px; 
+                border-right: none; 
+                border-bottom: 1px solid #333; 
+                overflow-x: auto; 
+                white-space: nowrap;
+                flex-shrink: 0;
+            } 
+            .sidebar:hover { width: 100%; }
+            .nav-btn { 
+                width: auto; 
+                flex: 0 0 auto; /* Não esticar nem encolher */
+                padding: 10px 15px;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            .nav-btn:hover, .nav-btn.active {
+                border-left: none;
+                border-bottom: 3px solid var(--primary);
+            }
+
+            .main-content { padding: 10px; padding-bottom: 100px; /* Espaço extra no final */ }
+            
+            /* Formulários empilhados */
+            .form-row { flex-direction: column; gap: 10px; }
+            .form-row > * { width: 100% !important; flex: none !important; margin-right: 0; }
+            
+            /* Modal ajustado */
+            .modal-content { margin: 20% auto; width: 90%; }
+
+            /* Gráficos empilhados */
+            .glass-panel { padding: 15px; }
+            h2 { font-size: 1.2rem; }
+        }
     </style>
 </head>
 <body>
@@ -49,12 +103,12 @@
 <nav class="sidebar">
     <button class="nav-btn active" onclick="switchTab('clientes')"><span>👥 Clientes</span></button>
     <button class="nav-btn" onclick="switchTab('corridas')"><span>🏎️ Corridas</span></button>
-    <button class="nav-btn" onclick="switchTab('estoque')"><span>📦 Estoque (Cad)</span></button>
-    <button class="nav-btn" onclick="switchTab('entrada-produtos')"><span>🚛 Entrada Merc.</span></button>
+    <button class="nav-btn" onclick="switchTab('historico')"><span>🏁 Histórico</span></button> <button class="nav-btn" onclick="switchTab('estoque')"><span>📦 Estoque</span></button>
+    <button class="nav-btn" onclick="switchTab('entrada-produtos')"><span>🚛 Entrada</span></button>
     <button class="nav-btn" onclick="switchTab('venda-avulsa')"><span>🛒 Vendas</span></button>
-    <button class="nav-btn" onclick="switchTab('gastos')"><span>💸 Saída de Gastos</span></button>
+    <button class="nav-btn" onclick="switchTab('gastos')"><span>💸 Saída</span></button>
     <button class="nav-btn" onclick="switchTab('relatorios')"><span>📊 Relatórios</span></button>
-    <button class="nav-btn" onclick="switchTab('dashboard')"><span>📈 Dash Financeiro</span></button>
+    <button class="nav-btn" onclick="switchTab('dashboard')"><span>📈 Dash</span></button>
 </nav>
 
 <div class="main-content">
@@ -70,11 +124,11 @@
             </div>
         </div>
         <div class="glass-panel">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
                 <h3>Clientes Cadastrados</h3>
-                <input type="text" id="searchTable" placeholder="🔍 Pesquisar por nome..." style="max-width:300px;" onkeyup="carregarClientes()">
+                <input type="text" id="searchTable" placeholder="🔍 Pesquisar por nome..." style="max-width:300px; width: 100%;" onkeyup="carregarClientes()">
             </div>
-            <div style="overflow-x:auto">
+            <div class="table-responsive">
                 <table id="tabelaClientes">
                     <thead><tr><th>Nome</th><th>Telefone</th><th>E-mail</th><th>Ação</th></tr></thead>
                     <tbody></tbody>
@@ -120,17 +174,19 @@
                 </select>
                 <button class="btn btn-blue" onclick="addDriverToList()">+ Adicionar</button>
             </div>
-            <table id="tempDriversTable">
-                <thead><tr><th>Piloto</th><th>Pista</th><th>Pagamento</th><th>Valor</th><th>Ação</th></tr></thead>
-                <tbody></tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" style="text-align:right; font-weight:bold;">TOTAL BATERIA:</td>
-                        <td id="totalRaceValue" style="color:var(--primary); font-weight:bold;">R$ 0.00</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="table-responsive">
+                <table id="tempDriversTable">
+                    <thead><tr><th>Piloto</th><th>Pista</th><th>Pagamento</th><th>Valor</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align:right; font-weight:bold;">TOTAL BATERIA:</td>
+                            <td id="totalRaceValue" style="color:var(--primary); font-weight:bold;">R$ 0.00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
             <div style="margin-top: 20px; text-align: right;">
                 <button class="btn btn-primary" onclick="saveBooking()" style="width: 100%;">ENVIAR PARA CRONOMETRAGEM</button>
             </div>
@@ -139,6 +195,27 @@
         <div id="bookingList"></div>
     </div>
 
+    <div id="tab-historico" class="tab-content">
+        <h2>Histórico de Corridas</h2>
+        <div class="glass-panel">
+            <div class="form-row">
+                <label style="align-self:center; color:#ccc;">De:</label>
+                <input type="date" id="histStart">
+                <label style="align-self:center; color:#ccc;">Até:</label>
+                <input type="date" id="histEnd">
+                <button class="btn btn-primary" onclick="carregarHistoricoCorridas()">Filtrar</button>
+            </div>
+        </div>
+        <div class="glass-panel">
+            <h3>Resultados da Pesquisa</h3>
+            <div class="table-responsive">
+                <table id="tabelaHistorico">
+                    <thead><tr><th>Data</th><th>Hora</th><th>Bateria</th><th>Responsável</th><th>Status</th><th>Total</th><th>Ações</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
     <div id="tab-estoque" class="tab-content">
         <h2>Gestão de Estoque</h2>
         <div class="glass-panel">
@@ -152,10 +229,12 @@
         </div>
         <div class="glass-panel">
             <h3>Estoque Atual</h3>
-            <table id="tabelaEstoqueGeral">
-                <thead><tr><th>Produto</th><th>Preço</th><th>Qtd</th><th>Mín.</th><th>Status</th><th>Ação</th></tr></thead>
-                <tbody id="listaEstoqueGeralBody"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table id="tabelaEstoqueGeral">
+                    <thead><tr><th>Produto</th><th>Preço</th><th>Qtd</th><th>Mín.</th><th>Status</th><th>Ação</th></tr></thead>
+                    <tbody id="listaEstoqueGeralBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -192,10 +271,12 @@
         </div>
         <div class="glass-panel">
             <h3>Últimas Vendas (Hoje)</h3>
-            <table id="tabelaVendasAvulsas">
-                <thead><tr><th>Data</th><th>Item</th><th>Qtd</th><th>Pagamento</th><th>Total</th><th>Ação</th></tr></thead>
-                <tbody></tbody>
-            </table>
+            <div class="table-responsive">
+                <table id="tabelaVendasAvulsas">
+                    <thead><tr><th>Data</th><th>Item</th><th>Qtd</th><th>Pagamento</th><th>Total</th><th>Ação</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -219,10 +300,12 @@
                 <button class="btn btn-danger" onclick="salvarDespesa()">Registrar Saída</button>
             </div>
         </div>
-        <table id="tabelaDespesas">
-            <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
-            <tbody></tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="tabelaDespesas">
+                <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Ação</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="tab-relatorios" class="tab-content">
@@ -258,10 +341,12 @@
             </div>
         </div>
 
-        <table id="tabelaRelatorioCompleto">
-            <thead><tr><th>Data</th><th>Origem</th><th>Descrição</th><th>Pagamento</th><th>Valor</th></tr></thead>
-            <tbody></tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="tabelaRelatorioCompleto">
+                <thead><tr><th>Data</th><th>Origem</th><th>Descrição</th><th>Pagamento</th><th>Valor</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <div id="tab-dashboard" class="tab-content">
@@ -306,6 +391,29 @@
 <div id="modalEditCliente" class="modal"><div class="modal-content"><h3>Editar Cliente</h3><input type="hidden" id="editCliId"><input type="text" id="editCliNome" style="width:100%; margin-bottom:10px;"><input type="text" id="editCliTel" style="width:100%; margin-bottom:10px;"><input type="email" id="editCliEmail" style="width:100%; margin-bottom:10px;"><button class="btn btn-primary" onclick="atualizarCliente()" style="width:100%; margin-bottom:10px;">Salvar</button><button class="btn btn-danger" onclick="document.getElementById('modalEditCliente').style.display='none'" style="width:100%;">Cancelar</button></div></div>
 <div id="modalEditProduto" class="modal"><div class="modal-content"><h3>Editar Produto</h3><input type="hidden" id="editProdId"><input type="text" id="editProdNome" style="width:100%; margin-bottom:10px;"><input type="number" id="editProdPreco" step="0.01" style="width:100%; margin-bottom:10px;"><input type="number" id="editProdEstoque" style="width:100%; margin-bottom:10px;"><input type="number" id="editProdMin" style="width:100%; margin-bottom:10px;"><button class="btn btn-primary" onclick="atualizarProduto()" style="width:100%; margin-bottom:10px;">Salvar</button><button class="btn btn-danger" onclick="document.getElementById('modalEditProduto').style.display='none'" style="width:100%;">Cancelar</button></div></div>
 
+<div id="modalEditCorrida" class="modal">
+    <div class="modal-content">
+        <h3>Editar Dados da Corrida</h3>
+        <input type="hidden" id="editRaceId">
+        <label>Nome da Bateria:</label>
+        <input type="text" id="editRaceName" style="width:100%; margin-bottom:10px;">
+        <label>Responsável:</label>
+        <input type="text" id="editRaceResp" style="width:100%; margin-bottom:10px;">
+        <label>Data:</label>
+        <input type="date" id="editRaceDate" style="width:100%; margin-bottom:10px;">
+        <label>Hora:</label>
+        <input type="time" id="editRaceTime" style="width:100%; margin-bottom:10px;">
+        <label>Status:</label>
+        <select id="editRaceStatus" style="width:100%; margin-bottom:15px; background:#2a2a2a; color:white; padding:10px;">
+            <option value="pendente">Pendente</option>
+            <option value="finalizada">Finalizada</option>
+            <option value="cancelada">Cancelada</option>
+        </select>
+        <button class="btn btn-primary" onclick="salvarEdicaoCorrida()" style="width:100%; margin-bottom:10px;">Salvar Alterações</button>
+        <button class="btn btn-danger" onclick="document.getElementById('modalEditCorrida').style.display='none'" style="width:100%;">Cancelar</button>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, getDoc, query, where, Timestamp, onSnapshot, deleteDoc, doc, orderBy, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -340,6 +448,7 @@
         if(window.event) window.event.currentTarget.classList.add('active');
         if(tab === 'relatorios') gerarRelatorio();
         if(tab === 'dashboard') atualizarDashboard();
+        if(tab === 'historico') carregarHistoricoCorridas(); // Carrega ao abrir a aba
     };
 
     window.salvarCliente = async () => {
@@ -408,13 +517,11 @@
     };
 
     function loadBookings() {
-        // CORREÇÃO: Usamos apenas o orderBy e filtramos o status no código para evitar erros de índice ausente no Firebase
         const q = query(collection(db, "agendamentos"), orderBy("createdAt", "desc"));
         onSnapshot(q, (snap) => {
             const list = document.getElementById('bookingList'); list.innerHTML = "";
             snap.forEach(d => {
                 const data = d.data();
-                // Filtro manual de status para sumir ao iniciar e não quebrar a exibição inicial
                 if(data.status === "pendente") {
                     list.innerHTML += `<div class="glass-panel">
                         <div style="display:flex; justify-content:space-between;"><strong>${data.raceTime} - ${data.raceName}</strong><span>R$ ${data.totalValue?.toFixed(2) || '0.00'}</span></div>
@@ -425,6 +532,77 @@
             });
         });
     }
+
+    /* --- NOVAS FUNÇÕES HISTÓRICO --- */
+    window.carregarHistoricoCorridas = async () => {
+        const start = document.getElementById('histStart').value;
+        const end = document.getElementById('histEnd').value;
+        const tb = document.querySelector('#tabelaHistorico tbody');
+        tb.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
+
+        // Busca todas as corridas ordenadas por data
+        const q = query(collection(db, "agendamentos"), orderBy("raceDate", "desc"));
+        const snapshot = await getDocs(q);
+        
+        tb.innerHTML = "";
+        let encontrou = false;
+
+        snapshot.forEach(docSnap => {
+            const d = docSnap.data();
+            // Filtro de data no cliente
+            if(d.raceDate >= start && d.raceDate <= end) {
+                encontrou = true;
+                tb.innerHTML += `<tr>
+                    <td>${d.raceDate.split('-').reverse().join('/')}</td>
+                    <td>${d.raceTime}</td>
+                    <td>${d.raceName}</td>
+                    <td>${d.responsible || '-'}</td>
+                    <td>${d.status}</td>
+                    <td>R$ ${d.totalValue?.toFixed(2) || '0.00'}</td>
+                    <td>
+                        <button class="btn-blue" onclick='abrirEdicaoCorrida(${JSON.stringify({id: docSnap.id, ...d})})'>✏️</button>
+                        <button class="btn-danger" onclick="excluirCorridaHistorico('${docSnap.id}')">🗑️</button>
+                    </td>
+                </tr>`;
+            }
+        });
+
+        if(!encontrou) tb.innerHTML = '<tr><td colspan="7">Nenhuma corrida encontrada neste período.</td></tr>';
+    };
+
+    window.excluirCorridaHistorico = async (id) => {
+        if(confirm("Tem certeza que deseja apagar permanentemente esta corrida do histórico?")) {
+            await deleteDoc(doc(db, "agendamentos", id));
+            carregarHistoricoCorridas(); // Recarrega a tabela
+        }
+    };
+
+    window.abrirEdicaoCorrida = (data) => {
+        document.getElementById('editRaceId').value = data.id;
+        document.getElementById('editRaceName').value = data.raceName;
+        document.getElementById('editRaceResp').value = data.responsible || '';
+        document.getElementById('editRaceDate').value = data.raceDate;
+        document.getElementById('editRaceTime').value = data.raceTime;
+        document.getElementById('editRaceStatus').value = data.status;
+        document.getElementById('modalEditCorrida').style.display = 'block';
+    };
+
+    window.salvarEdicaoCorrida = async () => {
+        const id = document.getElementById('editRaceId').value;
+        const dados = {
+            raceName: document.getElementById('editRaceName').value,
+            responsible: document.getElementById('editRaceResp').value,
+            raceDate: document.getElementById('editRaceDate').value,
+            raceTime: document.getElementById('editRaceTime').value,
+            status: document.getElementById('editRaceStatus').value
+        };
+
+        await updateDoc(doc(db, "agendamentos", id), dados);
+        document.getElementById('modalEditCorrida').style.display = 'none';
+        carregarHistoricoCorridas(); // Atualiza a lista
+        alert("Corrida atualizada com sucesso!");
+    };
+    /* --- FIM FUNÇÕES HISTÓRICO --- */
 
     window.cadastrarProduto = async () => {
         const nome = document.getElementById('novoProdNome').value;
@@ -588,6 +766,11 @@
         document.getElementById('reportEnd').value = hoje;
         document.getElementById('dashStart').value = hoje;
         document.getElementById('dashEnd').value = hoje;
+        
+        // Inicializa datas do histórico
+        document.getElementById('histStart').value = hoje;
+        document.getElementById('histEnd').value = hoje;
+
         document.getElementById('gastoData').value = hoje;
         carregarClientes(); loadCircuits(); loadBookings(); carregarProdutos(); carregarDespesas();
     };
