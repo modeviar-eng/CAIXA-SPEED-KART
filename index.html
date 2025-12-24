@@ -54,45 +54,22 @@
         .stat-card { background: #252525; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); flex: 1; min-width: 140px; }
         .chart-container { position: relative; height: 300px; width: 100%; }
 
+        .split-item { display: flex; justify-content: space-between; padding: 5px; background: #333; margin-bottom: 5px; border-radius: 4px; font-size: 0.85rem; }
+
         /* AJUSTES MOBILE / CELULAR */
         @media (max-width: 768px) { 
             body { flex-direction: column; height: 100vh; } 
-            
-            /* Sidebar com scroll horizontal */
             .sidebar { 
-                width: 100%; 
-                height: auto; 
-                flex-direction: row; 
-                padding: 5px; 
-                border-right: none; 
-                border-bottom: 1px solid #333; 
-                overflow-x: auto; 
-                white-space: nowrap;
-                flex-shrink: 0;
+                width: 100%; height: auto; flex-direction: row; padding: 5px; border-right: none; 
+                border-bottom: 1px solid #333; overflow-x: auto; white-space: nowrap; flex-shrink: 0;
             } 
             .sidebar:hover { width: 100%; }
-            .nav-btn { 
-                width: auto; 
-                flex: 0 0 auto; /* Não esticar nem encolher */
-                padding: 10px 15px;
-                border-left: none;
-                border-bottom: 3px solid transparent;
-            }
-            .nav-btn:hover, .nav-btn.active {
-                border-left: none;
-                border-bottom: 3px solid var(--primary);
-            }
-
-            .main-content { padding: 10px; padding-bottom: 100px; /* Espaço extra no final */ }
-            
-            /* Formulários empilhados */
+            .nav-btn { width: auto; flex: 0 0 auto; padding: 10px 15px; border-left: none; border-bottom: 3px solid transparent; }
+            .nav-btn:hover, .nav-btn.active { border-left: none; border-bottom: 3px solid var(--primary); }
+            .main-content { padding: 10px; padding-bottom: 100px; }
             .form-row { flex-direction: column; gap: 10px; }
             .form-row > * { width: 100% !important; flex: none !important; margin-right: 0; }
-            
-            /* Modal ajustado */
             .modal-content { margin: 20% auto; width: 90%; }
-
-            /* Gráficos empilhados */
             .glass-panel { padding: 15px; }
             h2 { font-size: 1.2rem; }
         }
@@ -103,7 +80,9 @@
 <nav class="sidebar">
     <button class="nav-btn active" onclick="switchTab('clientes')"><span>👥 Clientes</span></button>
     <button class="nav-btn" onclick="switchTab('corridas')"><span>🏎️ Corridas</span></button>
-    <button class="nav-btn" onclick="switchTab('historico')"><span>🏁 Histórico</span></button> <button class="nav-btn" onclick="switchTab('estoque')"><span>📦 Estoque</span></button>
+    <button class="nav-btn" onclick="switchTab('modos')"><span>⚙️ Modos</span></button>
+    <button class="nav-btn" onclick="switchTab('historico')"><span>🏁 Histórico</span></button> 
+    <button class="nav-btn" onclick="switchTab('estoque')"><span>📦 Estoque</span></button>
     <button class="nav-btn" onclick="switchTab('entrada-produtos')"><span>🚛 Entrada</span></button>
     <button class="nav-btn" onclick="switchTab('venda-avulsa')"><span>🛒 Vendas</span></button>
     <button class="nav-btn" onclick="switchTab('gastos')"><span>💸 Saída</span></button>
@@ -137,6 +116,39 @@
         </div>
     </div>
 
+    <div id="tab-modos" class="tab-content">
+        <h2>Configurar Modos de Corrida</h2>
+        <div class="glass-panel">
+            <p style="color:#aaa; font-size:0.9rem;">Crie predefinições (ex: GP 20 min) que geram automaticamente a Tomada de Tempo e a Corrida.</p>
+            <div class="form-row">
+                <input type="text" id="newModeName" placeholder="Nome do Modo (ex: GP Amador)">
+            </div>
+            <div id="stagesContainer">
+                <div class="form-row stage-row">
+                    <span style="align-self:center; color:var(--primary); font-weight:bold;">Etapa 1:</span>
+                    <select class="stage-type">
+                        <option value="tomada">Tomada de Tempo</option>
+                        <option value="corrida">Corrida</option>
+                    </select>
+                    <input type="text" class="stage-suffix" placeholder="Sufixo (ex: Classificação)">
+                </div>
+            </div>
+            <div class="form-row">
+                <button class="btn btn-blue" onclick="addStageRow()">+ Adicionar Etapa</button>
+                <button class="btn btn-primary" onclick="saveRaceMode()">Salvar Modo</button>
+            </div>
+        </div>
+        <div class="glass-panel">
+            <h3>Modos Salvos</h3>
+            <div class="table-responsive">
+                <table id="tabelaModos">
+                    <thead><tr><th>Nome do Modo</th><th>Etapas</th><th>Ação</th></tr></thead>
+                    <tbody id="listaModosBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div id="tab-corridas" class="tab-content">
         <h2>Agendar Nova Bateria</h2>
         <div class="glass-panel">
@@ -150,9 +162,13 @@
                 <input type="time" id="raceTime">
             </div>
             <div class="form-row">
+                <select id="presetModeSelect" style="border: 1px solid var(--primary); color: var(--primary); font-weight: bold;">
+                    <option value="">-- Carregar Modo Pré-definido --</option>
+                </select>
+                
                 <select id="raceMode">
-                    <option value="corrida">Modo: Corrida</option>
-                    <option value="tomada">Modo: Tomada de Tempo</option>
+                    <option value="corrida">Modo Manual: Corrida</option>
+                    <option value="tomada">Modo Manual: Tomada de Tempo</option>
                 </select>
                 <select id="circuitSelect"><option value="">Carregando pistas...</option></select>
             </div>
@@ -164,13 +180,14 @@
                     <input type="text" id="driverName" placeholder="Nome do Piloto" onkeyup="searchClient(this, 'driver_results')">
                     <div id="driver_results" class="search-results"></div>
                 </div>
-                <input type="number" id="driverPrice" placeholder="Valor (R$)" step="0.01" style="flex:1;">
+                <input type="number" id="driverPrice" placeholder="Valor Total (R$)" step="0.01" style="flex:1;">
                 <select id="driverPayment" style="flex:1;">
                     <option value="Dinheiro">Dinheiro</option>
                     <option value="PIX">PIX</option>
                     <option value="Débito">Débito</option>
                     <option value="Crédito">Crédito</option>
                     <option value="Cortesia">Cortesia</option>
+                    <option value="Misto" style="color:var(--warning); font-weight:bold;">+ Múltiplos (Misto)</option>
                 </select>
                 <button class="btn btn-blue" onclick="addDriverToList()">+ Adicionar</button>
             </div>
@@ -414,6 +431,34 @@
     </div>
 </div>
 
+<div id="modalSplitPayment" class="modal">
+    <div class="modal-content">
+        <h3>Pagamento Misto - <span id="splitDriverName" style="color:var(--primary)"></span></h3>
+        <h4 style="margin:5px 0;">Total Necessário: R$ <span id="splitTotalReq">0.00</span></h4>
+        
+        <div id="splitList" style="margin:15px 0; border:1px solid #444; padding:10px; border-radius:6px; min-height:50px;"></div>
+        
+        <div class="form-row" style="margin-bottom:10px;">
+             <input type="number" id="splitPartValue" placeholder="Valor (R$)" step="0.01">
+             <select id="splitPartMethod">
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="PIX">PIX</option>
+                <option value="Débito">Débito</option>
+                <option value="Crédito">Crédito</option>
+             </select>
+             <button class="btn btn-blue" onclick="addSplitPart()">+</button>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+            <span id="splitRemaining" style="color:var(--danger); font-weight:bold;">Restante: R$ 0.00</span>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-primary" onclick="finalizeSplitDriver()">Confirmar</button>
+                <button class="btn btn-danger" onclick="closeSplitModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, getDoc, query, where, Timestamp, onSnapshot, deleteDoc, doc, orderBy, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
@@ -434,12 +479,18 @@
     let allClients = [];
     let chartFluxoInstancia = null;
     let chartCategoriaInstancia = null;
+    let allRaceModes = [];
+
+    // Variáveis para pagamento misto
+    let currentSplitDriver = null; 
+    window.currentSplitPayments = [];
 
     window.deletarBateria = async (id) => { if(confirm("Excluir agendamento?")) await deleteDoc(doc(db, "agendamentos", id)); };
     window.deletarVenda = async (id) => { if(confirm("Excluir venda?")) await deleteDoc(doc(db, "vendas_avulsas", id)); };
     window.deletarProduto = async (id) => { if(confirm("Excluir produto?")) await deleteDoc(doc(db, "produtos", id)); };
     window.deletarCliente = async (id) => { if(confirm("Excluir cliente?")) await deleteDoc(doc(db, "clientes", id)); };
     window.deletarDespesa = async (id) => { if(confirm("Excluir despesa?")) await deleteDoc(doc(db, "despesas", id)); };
+    window.deletarModo = async (id) => { if(confirm("Excluir este modo?")) await deleteDoc(doc(db, "race_modes", id)); };
 
     window.switchTab = (tab) => {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -448,7 +499,7 @@
         if(window.event) window.event.currentTarget.classList.add('active');
         if(tab === 'relatorios') gerarRelatorio();
         if(tab === 'dashboard') atualizarDashboard();
-        if(tab === 'historico') carregarHistoricoCorridas(); // Carrega ao abrir a aba
+        if(tab === 'historico') carregarHistoricoCorridas();
     };
 
     window.salvarCliente = async () => {
@@ -458,15 +509,41 @@
         document.getElementById('cliNome').value = ""; document.getElementById('cliTelefone').value = ""; document.getElementById('cliEmail').value = "";
     };
 
+    window.abrirEdicaoCliente = (data) => {
+        document.getElementById('editCliId').value = data.id;
+        document.getElementById('editCliNome').value = data.nome;
+        document.getElementById('editCliTel').value = data.tel || '';
+        document.getElementById('editCliEmail').value = data.email || '';
+        document.getElementById('modalEditCliente').style.display = 'block';
+    };
+
+    window.atualizarCliente = async () => {
+        const id = document.getElementById('editCliId').value;
+        await updateDoc(doc(db, "clientes", id), {
+            nome: document.getElementById('editCliNome').value,
+            tel: document.getElementById('editCliTel').value,
+            email: document.getElementById('editCliEmail').value
+        });
+        document.getElementById('modalEditCliente').style.display = 'none';
+        alert("Cliente atualizado!");
+    };
+
     window.carregarClientes = () => {
         onSnapshot(query(collection(db, "clientes"), orderBy("nome")), (snap) => {
             const tb = document.querySelector('#tabelaClientes tbody'); tb.innerHTML = ""; allClients = [];
             snap.forEach(d => {
-                const c = d.data(); allClients.push({id: d.id, ...c});
-                tb.innerHTML += `<tr><td>${c.nome}</td><td>${c.tel || '-'}</td><td>${c.email || '-'}</td><td>
-                    <button class="btn-blue" onclick='abrirEdicaoCliente(${JSON.stringify({id: d.id, ...c})})'>Editar</button> 
+                const c = d.data(); 
+                const clienteData = {id: d.id, ...c};
+                allClients.push(clienteData);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${c.nome}</td><td>${c.tel || '-'}</td><td>${c.email || '-'}</td><td>
+                    <button class="btn-blue btn-edit-cli">Editar</button> 
                     <button class="btn-danger" onclick="deletarCliente('${d.id}')">Excluir</button>
-                </td></tr>`;
+                </td>`;
+                
+                tr.querySelector('.btn-edit-cli').onclick = () => window.abrirEdicaoCliente(clienteData);
+                tb.appendChild(tr);
             });
         });
     };
@@ -480,40 +557,293 @@
         resDiv.style.display = filtered.length > 0 ? 'block' : 'none';
     };
 
+    /* --- LÓGICA DE MODOS DE CORRIDA --- */
+    window.addStageRow = () => {
+        const div = document.createElement('div');
+        div.className = 'form-row stage-row';
+        div.innerHTML = `
+            <span style="align-self:center; color:var(--primary); font-weight:bold;">Etapa:</span>
+            <select class="stage-type">
+                <option value="tomada">Tomada de Tempo</option>
+                <option value="corrida">Corrida</option>
+            </select>
+            <input type="text" class="stage-suffix" placeholder="Sufixo (ex: Corrida 2)">
+            <button class="btn-danger" onclick="this.parentElement.remove()" style="padding:5px 10px;">X</button>
+        `;
+        document.getElementById('stagesContainer').appendChild(div);
+    };
+
+    window.saveRaceMode = async () => {
+        const name = document.getElementById('newModeName').value;
+        if(!name) return alert("Dê um nome ao modo!");
+        const stages = [];
+        document.querySelectorAll('.stage-row').forEach(row => {
+            stages.push({
+                type: row.querySelector('.stage-type').value,
+                suffix: row.querySelector('.stage-suffix').value
+            });
+        });
+        await addDoc(collection(db, "race_modes"), { name, stages, createdAt: Timestamp.now() });
+        alert("Modo salvo!");
+        document.getElementById('newModeName').value = "";
+    };
+
+    function loadRaceModes() {
+        onSnapshot(query(collection(db, "race_modes"), orderBy("name")), (snap) => {
+            const tb = document.getElementById('listaModosBody');
+            const sel = document.getElementById('presetModeSelect');
+            tb.innerHTML = "";
+            sel.innerHTML = '<option value="">-- Carregar Modo Pré-definido --</option>';
+            allRaceModes = [];
+            
+            snap.forEach(d => {
+                const m = d.data();
+                allRaceModes.push({id: d.id, ...m});
+                
+                // Popula Tabela na aba Modos
+                const stagesDesc = m.stages.map(s => `${s.suffix} (${s.type})`).join(', ');
+                tb.innerHTML += `<tr><td>${m.name}</td><td>${stagesDesc}</td><td><button class="btn-danger" onclick="deletarModo('${d.id}')">X</button></td></tr>`;
+                
+                // Popula Select na aba Corridas
+                sel.innerHTML += `<option value="${d.id}">${m.name}</option>`;
+            });
+        });
+    }
+
+    /* LÓGICA DE PAGAMENTO MISTO E ADIÇÃO DE PILOTO */
     window.addDriverToList = () => {
         const name = document.getElementById('driverName').value;
         const circuitSelect = document.getElementById('circuitSelect');
         const price = parseFloat(document.getElementById('driverPrice').value) || 0;
         const payment = document.getElementById('driverPayment').value;
+
         if(!name || !circuitSelect.value) return alert("Preencha Nome e Pista");
-        tempDrivers.push({ name: name, pistaNome: JSON.parse(circuitSelect.value).name, id: Date.now(), laps: [], price, paymentMethod: payment });
-        renderTempTable(); document.getElementById('driverName').value = "";
+
+        // Se for Pagamento Misto, abre o modal
+        if(payment === 'Misto') {
+            if(price <= 0) return alert("Informe o valor total antes de dividir.");
+            openSplitModal(name, price, JSON.parse(circuitSelect.value).name);
+            return;
+        }
+
+        // Fluxo normal (pagamento único)
+        tempDrivers.push({ 
+            name: name, 
+            pistaNome: JSON.parse(circuitSelect.value).name, 
+            id: Date.now(), 
+            laps: [], 
+            price, 
+            paymentMethod: payment 
+        });
+        renderTempTable(); 
+        document.getElementById('driverName').value = "";
+        document.getElementById('driverPrice').value = ""; // Limpa preço também
+    };
+
+    // Abre o modal de pagamento misto
+    window.openSplitModal = (name, total, pista) => {
+        currentSplitDriver = { name, total, pista };
+        window.currentSplitPayments = [];
+        document.getElementById('splitDriverName').innerText = name;
+        document.getElementById('splitTotalReq').innerText = total.toFixed(2);
+        document.getElementById('modalSplitPayment').style.display = 'block';
+        updateSplitUI();
+    };
+
+    // Adiciona uma parte do pagamento na lista temporária do modal
+    window.addSplitPart = () => {
+        const val = parseFloat(document.getElementById('splitPartValue').value);
+        const method = document.getElementById('splitPartMethod').value;
+        if(!val || val <= 0) return;
+        
+        window.currentSplitPayments.push({ value: val, method: method });
+        document.getElementById('splitPartValue').value = "";
+        updateSplitUI();
+    };
+
+    // Atualiza a lista visual dentro do modal e o cálculo do restante
+    function updateSplitUI() {
+        const list = document.getElementById('splitList');
+        const totalPaid = window.currentSplitPayments.reduce((acc, cur) => acc + cur.value, 0);
+        const remaining = currentSplitDriver.total - totalPaid;
+        
+        list.innerHTML = "";
+        window.currentSplitPayments.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = "split-item";
+            div.innerHTML = `<span>${p.method}: R$ ${p.value.toFixed(2)}</span>`;
+            const btn = document.createElement('button');
+            btn.style.cssText = "background:none; border:none; color:var(--danger); cursor:pointer;";
+            btn.innerText = "X";
+            btn.onclick = () => {
+                window.currentSplitPayments.splice(i, 1);
+                updateSplitUI();
+            };
+            div.appendChild(btn);
+            list.appendChild(div);
+        });
+
+        const elRem = document.getElementById('splitRemaining');
+        elRem.innerText = `Restante: R$ ${remaining.toFixed(2)}`;
+        elRem.style.color = Math.abs(remaining) < 0.01 ? 'var(--primary)' : 'var(--danger)';
+    }
+
+    window.closeSplitModal = () => {
+        document.getElementById('modalSplitPayment').style.display = 'none';
+        currentSplitDriver = null;
+        window.currentSplitPayments = [];
+    };
+
+    // Finaliza a adição do piloto com pagamento misto
+    window.finalizeSplitDriver = () => {
+        const totalPaid = window.currentSplitPayments.reduce((acc, cur) => acc + cur.value, 0);
+        // Pequena tolerância para erros de ponto flutuante
+        if(Math.abs(totalPaid - currentSplitDriver.total) > 0.05) {
+            alert(`O total dos pagamentos (R$ ${totalPaid.toFixed(2)}) não bate com o valor do piloto (R$ ${currentSplitDriver.total.toFixed(2)})!`);
+            return;
+        }
+
+        tempDrivers.push({ 
+            name: currentSplitDriver.name, 
+            pistaNome: currentSplitDriver.pista, 
+            id: Date.now(), 
+            laps: [], 
+            price: currentSplitDriver.total, 
+            paymentMethod: "Misto",
+            splitPayments: [...window.currentSplitPayments] // Salva o array de pagamentos
+        });
+
+        renderTempTable();
+        document.getElementById('driverName').value = "";
+        document.getElementById('driverPrice').value = "";
+        closeSplitModal();
     };
 
     function renderTempTable() {
         const tbody = document.querySelector('#tempDriversTable tbody');
+        tbody.innerHTML = "";
         let total = 0;
-        tbody.innerHTML = tempDrivers.map((d, i) => { total += d.price; return `<tr><td>${d.name}</td><td>${d.pistaNome}</td><td>${d.paymentMethod}</td><td>R$ ${d.price.toFixed(2)}</td><td><button class="btn-danger" onclick="tempDrivers.splice(${i},1);renderTempTable()">X</button></td></tr>`; }).join('');
+        
+        tempDrivers.forEach((d, i) => { 
+            total += d.price; 
+            
+            // Exibição amigável do método
+            let methodDisplay = d.paymentMethod;
+            if(d.paymentMethod === 'Misto' && d.splitPayments) {
+                const details = d.splitPayments.map(p => `${p.method.substr(0,3)}:${p.value}`).join(', ');
+                methodDisplay = `Misto (${details})`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${d.name}</td>
+                <td>${d.pistaNome}</td>
+                <td><span style="font-size:0.8rem; color:${d.paymentMethod === 'Misto' ? '#ccc' : 'inherit'};">${methodDisplay}</span></td>
+                <td>R$ ${d.price.toFixed(2)}</td>
+                <td></td>
+            `;
+            
+            const btnDel = document.createElement('button');
+            btnDel.className = "btn-danger";
+            btnDel.innerText = "X";
+            btnDel.onclick = () => {
+                tempDrivers.splice(i, 1);
+                renderTempTable();
+            };
+            
+            tr.cells[4].appendChild(btnDel);
+            tbody.appendChild(tr);
+        });
+        
         document.getElementById('totalRaceValue').innerText = `R$ ${total.toFixed(2)}`;
     }
 
     window.saveBooking = async () => {
         const circuit = document.getElementById('circuitSelect').value;
-        if(!document.getElementById('raceName').value || tempDrivers.length === 0) return alert("Preencha os dados da bateria");
+        const rName = document.getElementById('raceName').value;
+        const presetId = document.getElementById('presetModeSelect').value;
+        
+        if(!rName || tempDrivers.length === 0) return alert("Preencha os dados da bateria");
+        
         const totalValue = tempDrivers.reduce((sum, d) => sum + d.price, 0);
-        await addDoc(collection(db, "agendamentos"), { 
-            raceName: document.getElementById('raceName').value, 
-            responsible: document.getElementById('responsible').value, 
-            raceDate: document.getElementById('raceDate').value, 
-            raceTime: document.getElementById('raceTime').value, 
-            mode: document.getElementById('raceMode').value, 
-            circuit: JSON.parse(circuit), 
-            drivers: tempDrivers, 
-            status: "pendente", 
-            totalValue: totalValue,
-            createdAt: Timestamp.now() 
-        });
-        alert("Agendado!"); tempDrivers = []; renderTempTable();
+        const responsible = document.getElementById('responsible').value;
+        const rDate = document.getElementById('raceDate').value;
+        const rTime = document.getElementById('raceTime').value;
+
+        // Se tiver um preset selecionado (Multi-Stage)
+        if (presetId) {
+            const modeDoc = allRaceModes.find(m => m.id === presetId);
+            if(modeDoc) {
+                // Iterar sobre as etapas
+                for (let i = 0; i < modeDoc.stages.length; i++) {
+                    const stage = modeDoc.stages[i];
+                    
+                    // Lógica Financeira: 
+                    // A primeira etapa (i===0) leva o valor total para contar no caixa.
+                    // As demais levam valor 0 para não duplicar receita no Dashboard.
+                    let stageDrivers = [];
+                    let stageTotal = 0;
+
+                    if (i === 0) {
+                        stageDrivers = [...tempDrivers]; // Cópia normal com preços
+                        stageTotal = totalValue;
+                    } else {
+                        // Cópia zerando os preços para não duplicar financeiro
+                        stageDrivers = tempDrivers.map(d => ({
+                            ...d,
+                            price: 0,
+                            // Mantemos o método de pagamento original apenas para referência visual, 
+                            // mas como o valor é 0, não afeta a soma.
+                            paymentMethod: d.paymentMethod 
+                        }));
+                        stageTotal = 0;
+                    }
+
+                    // Nome da Bateria + Sufixo (ex: "Bateria Amigos - Tomada")
+                    const fullName = `${rName} - ${stage.suffix}`;
+
+                    await addDoc(collection(db, "agendamentos"), { 
+                        raceName: fullName, 
+                        responsible: responsible, 
+                        raceDate: rDate, 
+                        raceTime: rTime, // Poderia adicionar +minutos aqui se quisesse refinar
+                        mode: stage.type, 
+                        circuit: JSON.parse(circuit), 
+                        drivers: stageDrivers, 
+                        status: "pendente", 
+                        totalValue: stageTotal,
+                        createdAt: Timestamp.now(),
+                        isMultiStage: true
+                    });
+                }
+                alert(`Agendamento Múltiplo (${modeDoc.name}) Realizado!`);
+            }
+        } else {
+            // Modo Manual (Único)
+            const mode = document.getElementById('raceMode').value;
+            await addDoc(collection(db, "agendamentos"), { 
+                raceName: rName, 
+                responsible: responsible, 
+                raceDate: rDate, 
+                raceTime: rTime, 
+                mode: mode, 
+                circuit: JSON.parse(circuit), 
+                drivers: tempDrivers, 
+                status: "pendente", 
+                totalValue: totalValue,
+                createdAt: Timestamp.now() 
+            });
+            alert("Agendado!"); 
+        }
+
+        // Limpeza
+        tempDrivers = []; 
+        renderTempTable();
+        document.getElementById('raceName').value = "";
+        document.getElementById('responsible').value = "";
+        document.getElementById('raceTime').value = "";
+        document.getElementById('raceDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('presetModeSelect').value = "";
     };
 
     function loadBookings() {
@@ -533,26 +863,21 @@
         });
     }
 
-    /* --- NOVAS FUNÇÕES HISTÓRICO --- */
+    /* --- HISTÓRICO --- */
     window.carregarHistoricoCorridas = async () => {
         const start = document.getElementById('histStart').value;
         const end = document.getElementById('histEnd').value;
         const tb = document.querySelector('#tabelaHistorico tbody');
         tb.innerHTML = '<tr><td colspan="7">Carregando...</td></tr>';
-
-        // Busca todas as corridas ordenadas por data
         const q = query(collection(db, "agendamentos"), orderBy("raceDate", "desc"));
         const snapshot = await getDocs(q);
-        
-        tb.innerHTML = "";
-        let encontrou = false;
-
+        tb.innerHTML = ""; let encontrou = false;
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
-            // Filtro de data no cliente
             if(d.raceDate >= start && d.raceDate <= end) {
                 encontrou = true;
-                tb.innerHTML += `<tr>
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                     <td>${d.raceDate.split('-').reverse().join('/')}</td>
                     <td>${d.raceTime}</td>
                     <td>${d.raceName}</td>
@@ -560,20 +885,21 @@
                     <td>${d.status}</td>
                     <td>R$ ${d.totalValue?.toFixed(2) || '0.00'}</td>
                     <td>
-                        <button class="btn-blue" onclick='abrirEdicaoCorrida(${JSON.stringify({id: docSnap.id, ...d})})'>✏️</button>
+                        <button class="btn-blue btn-edit-hist">✏️</button>
                         <button class="btn-danger" onclick="excluirCorridaHistorico('${docSnap.id}')">🗑️</button>
                     </td>
-                </tr>`;
+                `;
+                tr.querySelector('.btn-edit-hist').onclick = () => window.abrirEdicaoCorrida({id: docSnap.id, ...d});
+                tb.appendChild(tr);
             }
         });
-
         if(!encontrou) tb.innerHTML = '<tr><td colspan="7">Nenhuma corrida encontrada neste período.</td></tr>';
     };
 
     window.excluirCorridaHistorico = async (id) => {
         if(confirm("Tem certeza que deseja apagar permanentemente esta corrida do histórico?")) {
             await deleteDoc(doc(db, "agendamentos", id));
-            carregarHistoricoCorridas(); // Recarrega a tabela
+            carregarHistoricoCorridas();
         }
     };
 
@@ -596,13 +922,11 @@
             raceTime: document.getElementById('editRaceTime').value,
             status: document.getElementById('editRaceStatus').value
         };
-
         await updateDoc(doc(db, "agendamentos", id), dados);
         document.getElementById('modalEditCorrida').style.display = 'none';
-        carregarHistoricoCorridas(); // Atualiza a lista
+        carregarHistoricoCorridas();
         alert("Corrida atualizada com sucesso!");
     };
-    /* --- FIM FUNÇÕES HISTÓRICO --- */
 
     window.cadastrarProduto = async () => {
         const nome = document.getElementById('novoProdNome').value;
@@ -617,11 +941,8 @@
             const listEstoque = document.getElementById('listaEstoqueGeralBody');
             const selectVenda = document.getElementById('selectProdutoVenda');
             const selectEntrada = document.getElementById('selectEntradaProduto'); 
-
-            listEstoque.innerHTML = ""; 
-            selectVenda.innerHTML = "";
+            listEstoque.innerHTML = ""; selectVenda.innerHTML = "";
             if(selectEntrada) selectEntrada.innerHTML = "<option value=''>Selecione o produto...</option>"; 
-
             snap.forEach(d => {
                 const p = d.data();
                 listEstoque.innerHTML += `<tr><td>${p.nome}</td><td>R$ ${p.preco.toFixed(2)}</td><td>${p.estoque}</td><td>${p.estoqueMin}</td><td>${p.estoque <= p.estoqueMin ? '⚠️' : '✅'}</td><td><button class="btn-danger" onclick="deletarProduto('${d.id}')">X</button></td></tr>`;
@@ -629,7 +950,6 @@
                 if(selectEntrada) selectEntrada.innerHTML += `<option value='${d.id}'>${p.nome}</option>`;
             });
         });
-        
         onSnapshot(query(collection(db, "vendas_avulsas"), orderBy("createdAt", "desc")), (snap) => {
             const tb = document.querySelector('#tabelaVendasAvulsas tbody'); tb.innerHTML = "";
             snap.forEach(d => {
@@ -675,6 +995,7 @@
         });
     }
 
+    /* RELATÓRIO ATUALIZADO PARA PAGAMENTO MISTO */
     window.gerarRelatorio = async () => {
         const start = document.getElementById('reportStart').value;
         const end = document.getElementById('reportEnd').value;
@@ -700,11 +1021,25 @@
             if((!start || c.raceDate >= start) && (!end || c.raceDate <= end)) {
                 c.drivers.forEach(dr => {
                     tot += dr.price;
-                    if(dr.paymentMethod === 'Dinheiro') din += dr.price;
-                    else if(dr.paymentMethod === 'PIX') px += dr.price;
-                    else if(dr.paymentMethod === 'Débito') deb += dr.price;
-                    else if(dr.paymentMethod === 'Crédito') cre += dr.price;
-                    tb.innerHTML += `<tr><td>${c.raceDate}</td><td>Corrida</td><td>${dr.name}</td><td>${dr.paymentMethod}</td><td>R$ ${dr.price.toFixed(2)}</td></tr>`;
+                    
+                    // Lógica para Pagamento Misto
+                    if(dr.paymentMethod === 'Misto' && dr.splitPayments) {
+                        dr.splitPayments.forEach(sp => {
+                            if(sp.method === 'Dinheiro') din += sp.value;
+                            else if(sp.method === 'PIX') px += sp.value;
+                            else if(sp.method === 'Débito') deb += sp.value;
+                            else if(sp.method === 'Crédito') cre += sp.value;
+                        });
+                        // Na tabela mostra resumo
+                        tb.innerHTML += `<tr><td>${c.raceDate}</td><td>Corrida</td><td>${dr.name}</td><td>Misto</td><td>R$ ${dr.price.toFixed(2)}</td></tr>`;
+                    } else {
+                        // Lógica Padrão
+                        if(dr.paymentMethod === 'Dinheiro') din += dr.price;
+                        else if(dr.paymentMethod === 'PIX') px += dr.price;
+                        else if(dr.paymentMethod === 'Débito') deb += dr.price;
+                        else if(dr.paymentMethod === 'Crédito') cre += dr.price;
+                        tb.innerHTML += `<tr><td>${c.raceDate}</td><td>Corrida</td><td>${dr.name}</td><td>${dr.paymentMethod}</td><td>R$ ${dr.price.toFixed(2)}</td></tr>`;
+                    }
                 });
             }
         });
@@ -766,13 +1101,10 @@
         document.getElementById('reportEnd').value = hoje;
         document.getElementById('dashStart').value = hoje;
         document.getElementById('dashEnd').value = hoje;
-        
-        // Inicializa datas do histórico
         document.getElementById('histStart').value = hoje;
         document.getElementById('histEnd').value = hoje;
-
         document.getElementById('gastoData').value = hoje;
-        carregarClientes(); loadCircuits(); loadBookings(); carregarProdutos(); carregarDespesas();
+        carregarClientes(); loadCircuits(); loadBookings(); carregarProdutos(); carregarDespesas(); loadRaceModes();
     };
 </script>
 </body>
