@@ -1018,6 +1018,10 @@
         const cSnap = await getDocs(collection(db, "agendamentos"));
         cSnap.forEach(d => {
             const c = d.data();
+            
+            // Se for multi-stage e o valor total for 0, ignora esta etapa no relatório para evitar duplicidade
+            if (c.isMultiStage && c.totalValue === 0) return;
+
             if((!start || c.raceDate >= start) && (!end || c.raceDate <= end)) {
                 c.drivers.forEach(dr => {
                     tot += dr.price;
