@@ -50,7 +50,19 @@
         .search-item:hover { background: #333; color: var(--primary); }
         
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
-        .modal-content { background: var(--bg-panel); margin: 10% auto; padding: 25px; width: 400px; border-radius: 10px; border: 1px solid var(--primary); max-width: 90%; }
+        
+        /* --- CORREÇÃO AQUI: Scroll no Modal --- */
+        .modal-content { 
+            background: var(--bg-panel); 
+            margin: 5% auto; /* Reduzi margem superior para aproveitar melhor a tela */
+            padding: 25px; 
+            width: 400px; 
+            border-radius: 10px; 
+            border: 1px solid var(--primary); 
+            max-width: 90%; 
+            max-height: 90vh; /* Altura máxima de 90% da tela */
+            overflow-y: auto; /* Permite rolar se o conteúdo for maior */
+        }
         
         .stat-card { background: #252525; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); flex: 1; min-width: 140px; }
         .chart-container { position: relative; height: 300px; width: 100%; }
@@ -70,7 +82,7 @@
             .main-content { padding: 10px; padding-bottom: 100px; }
             .form-row { flex-direction: column; gap: 10px; }
             .form-row > * { width: 100% !important; flex: none !important; margin-right: 0; }
-            .modal-content { margin: 20% auto; width: 90%; }
+            .modal-content { margin: 10% auto; width: 90%; }
             .glass-panel { padding: 15px; }
             h2 { font-size: 1.2rem; }
         }
@@ -121,7 +133,7 @@
         <div class="glass-panel">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
                 <h3>Clientes Cadastrados</h3>
-                <input type="text" id="searchTable" placeholder="🔍 Pesquisar por nome..." style="max-width:300px; width: 100%;" onkeyup="carregarClientes()">
+                <input type="text" id="searchTable" placeholder="🔍 Pesquisar por nome..." style="max-width:300px; width: 100%;" onkeyup="filtrarClientes()">
             </div>
             <div class="table-responsive">
                 <table id="tabelaClientes">
@@ -660,30 +672,44 @@
         alert("Cliente atualizado!");
     };
 
+    // CORREÇÃO: Função carregarClientes apenas busca dados e chama o filtro.
     window.carregarClientes = () => {
         onSnapshot(query(collection(db, "clientes"), orderBy("nome")), (snap) => {
-            const tb = document.querySelector('#tabelaClientes tbody'); tb.innerHTML = ""; allClients = [];
+            allClients = [];
             snap.forEach(d => {
                 const c = d.data(); 
-                const clienteData = {id: d.id, ...c};
-                allClients.push(clienteData);
-                
-                const tr = document.createElement('tr');
-                const infoExtra = `${c.faixaEtaria ? c.faixaEtaria : '-'} | ${c.peso ? c.peso + 'kg' : '-'}`;
-                
-                tr.innerHTML = `
-                    <td>${c.nome}</td>
-                    <td>${c.tel || '-'}</td>
-                    <td>${c.genero || '-'}</td>
-                    <td>${infoExtra}</td>
-                    <td>
-                        <button class="btn-blue btn-edit-cli">Editar</button> 
-                        <button class="btn-danger" onclick="deletarCliente('${d.id}')">Excluir</button>
-                    </td>`;
-                
-                tr.querySelector('.btn-edit-cli').onclick = () => window.abrirEdicaoCliente(clienteData);
-                tb.appendChild(tr);
+                allClients.push({id: d.id, ...c});
             });
+            // Atualiza a tabela com todos os clientes
+            filtrarClientes();
+        });
+    };
+
+    // CORREÇÃO: Nova função de filtro local para busca instantânea
+    window.filtrarClientes = () => {
+        const termo = document.getElementById('searchTable').value.toLowerCase();
+        const tb = document.querySelector('#tabelaClientes tbody');
+        tb.innerHTML = "";
+        
+        // Filtra a lista já carregada
+        const listaFiltrada = allClients.filter(c => c.nome.toLowerCase().includes(termo));
+
+        listaFiltrada.forEach(c => {
+            const tr = document.createElement('tr');
+            const infoExtra = `${c.faixaEtaria ? c.faixaEtaria : '-'} | ${c.peso ? c.peso + 'kg' : '-'}`;
+            
+            tr.innerHTML = `
+                <td>${c.nome}</td>
+                <td>${c.tel || '-'}</td>
+                <td>${c.genero || '-'}</td>
+                <td>${infoExtra}</td>
+                <td>
+                    <button class="btn-blue btn-edit-cli">Editar</button> 
+                    <button class="btn-danger" onclick="deletarCliente('${c.id}')">Excluir</button>
+                </td>`;
+            
+            tr.querySelector('.btn-edit-cli').onclick = () => window.abrirEdicaoCliente(c);
+            tb.appendChild(tr);
         });
     };
 
